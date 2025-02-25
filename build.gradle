@@ -1,0 +1,89 @@
+plugins {
+	id 'java'
+	id 'org.springframework.boot' version '3.4.3'
+	id 'io.spring.dependency-management' version '1.1.7'
+	id 'idea'
+}
+
+group = 'com.rest'
+version = '0.0.1-SNAPSHOT'
+
+java {
+	toolchain {
+		languageVersion = JavaLanguageVersion.of(21)
+	}
+}
+
+sourceSets {
+	componentTest {
+		java {
+			srcDirs = ['src/test/component-test/java']
+		}
+		resources {
+			srcDirs = ['src/main/resources', 'src/test/component-test/resources']
+		}
+		compileClasspath += sourceSets.main.output + configurations.testRuntimeClasspath
+		runtimeClasspath += output + compileClasspath
+	}
+	integrationTest {
+		java {
+			srcDirs = ['src/test/integration-test/java']
+		}
+		resources {
+			srcDirs = ['src/main/resources', 'src/test/integration-test/resources']
+		}
+		compileClasspath += sourceSets.main.output + configurations.testRuntimeClasspath
+		runtimeClasspath += output + compileClasspath
+	}
+	unitTest {
+		java {
+			srcDirs = ['src/test/unit-test/java']
+		}
+
+		compileClasspath += sourceSets.main.output
+		runtimeClasspath += output + compileClasspath
+	}
+
+}
+
+configurations {
+	unitTestImplementation.extendsFrom testImplementation
+	unitTestRuntime.extendsFrom testRuntime
+
+	integrationTestImplementation.extendsFrom testImplementation
+	integrationTestRuntimeOnly.extendsFrom testRuntimeOnly
+
+	componentTestImplementation.extendsFrom testImplementation
+	componentTestRuntimeOnly.extendsFrom testRuntimeOnly
+}
+
+idea {
+	module{
+		testSources.from(sourceSets.componentTest.java.srcDirs)
+		testResources.from(sourceSets.componentTest.resources.srcDirs)
+
+		testSources.from(sourceSets.integrationTest.java.srcDirs)
+		testResources.from(sourceSets.integrationTest.resources.srcDirs)
+
+		testSources.from(sourceSets.unitTest.java.srcDirs)
+	}
+}
+
+repositories {
+	mavenCentral()
+}
+
+dependencies {
+	implementation 'org.springframework.boot:spring-boot-starter-webflux'
+	compileOnly 'org.projectlombok:lombok'
+	annotationProcessor 'org.projectlombok:lombok'
+
+	testImplementation 'org.springframework.boot:spring-boot-starter-test'
+	testImplementation 'io.projectreactor:reactor-test'
+	testImplementation 'org.junit.jupiter:junit-jupiter'
+	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+tasks.named('test') {
+	useJUnitPlatform()
+}

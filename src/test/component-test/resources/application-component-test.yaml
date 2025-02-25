@@ -1,0 +1,10 @@
+spring:
+  main:
+    allow-bean-definition-overriding: true
+
+external:
+  timeout:
+    connect: 10s
+    read: 10s
+  poke-api:
+    url: "https://example/com"

@@ -1,0 +1,6 @@
+external:
+  timeout:
+    connect: 10s
+    read: 10s
+  poke-api:
+    url: "https://pokeapi.co/api/v2"
