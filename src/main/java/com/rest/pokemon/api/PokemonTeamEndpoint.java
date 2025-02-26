@@ -20,7 +20,6 @@ public class PokemonTeamEndpoint {
     private final BattleManager battleManager;
     private final PokemonTeamService pokemonTeamService;
 
-
     @GetMapping("/v1/pokemon/team")
     public Mono<PokemonTeam> getMyPokemon() {
         return pokemonTeamService.getTeam();

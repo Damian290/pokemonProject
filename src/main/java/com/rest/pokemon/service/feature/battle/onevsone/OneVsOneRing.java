@@ -35,20 +35,20 @@ public class OneVsOneRing {
     }
 
     //For debuging purposes
-    public void printRingState() {
-        System.out.println("MyPokemon stats: ");
-        System.out.println("Name: " + myPokemon.getPokemonDetails().name());
-        System.out.println("Hp: " + myPokemon.getPokemonDetails().statistics().getHp());
-        System.out.println("Defense: " + myPokemon.getCurrentDefenceLvl());
-        System.out.println("Speed: " + myPokemon.getPokemonDetails().statistics().getSpeed());
-        System.out.println("---------VS-----------");
-        System.out.println("Opponent stats: ");
-        System.out.println("Name: " + opponent.getPokemonDetails().name());
-        System.out.println("Hp: " + opponent.getPokemonDetails().statistics().getHp());
-        System.out.println("Defense: " + opponent.getCurrentDefenceLvl());
-        System.out.println("Speed: " + opponent.getPokemonDetails().statistics().getSpeed());
-        System.out.println();
-    }
+//    public void printRingState() {
+//        System.out.println("MyPokemon stats: ");
+//        System.out.println("Name: " + myPokemon.getPokemonDetails().name());
+//        System.out.println("Hp: " + myPokemon.getPokemonDetails().statistics().getHp());
+//        System.out.println("Defense: " + myPokemon.getCurrentDefenceLvl());
+//        System.out.println("Speed: " + myPokemon.getPokemonDetails().statistics().getSpeed());
+//        System.out.println("---------VS-----------");
+//        System.out.println("Opponent stats: ");
+//        System.out.println("Name: " + opponent.getPokemonDetails().name());
+//        System.out.println("Hp: " + opponent.getPokemonDetails().statistics().getHp());
+//        System.out.println("Defense: " + opponent.getCurrentDefenceLvl());
+//        System.out.println("Speed: " + opponent.getPokemonDetails().statistics().getSpeed());
+//        System.out.println();
+//    }
 
     private PokemonInDuel getFirstAttacker() {
         return opponent.getPokemonDetails().statistics().getSpeed() > myPokemon.getPokemonDetails().statistics().getSpeed()

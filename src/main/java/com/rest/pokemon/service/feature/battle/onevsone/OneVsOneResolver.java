@@ -7,9 +7,7 @@ public class OneVsOneResolver {
     public OneVsOneRing resolve(PokemonDetails myPokemonDetails, PokemonDetails opponentPokemonDetails) {
         var battleRing = new OneVsOneRing(myPokemonDetails, opponentPokemonDetails);
 
-        battleRing.printRingState();
         oneVsOneFight(battleRing);
-        battleRing.printRingState();
 
         return battleRing;
     }
@@ -17,7 +15,6 @@ public class OneVsOneResolver {
     private void oneVsOneFight(OneVsOneRing oneVsOneRing) {
         while (attack(oneVsOneRing, oneVsOneRing.getCurrentTurn().getPokemonDetails().statistics().getAttack())) {
             oneVsOneRing.setCurrentTurn(oneVsOneRing.damageReceiver());
-            oneVsOneRing.printRingState();
         }
     }
 

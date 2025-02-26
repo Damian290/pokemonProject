@@ -1,8 +1,9 @@
 package com.rest.pokemon.external.pokeapi;
 
+import com.github.benmanes.caffeine.cache.Cache;
+import com.rest.pokemon.domain.pokemon.PokemonOverview;
 import com.rest.pokemon.service.mapper.PokemonDtoToPokemonDetailsMapper;
 import com.rest.pokemon.service.mapper.PokemonOverviewDtoToPokemonOverviewMapper;
-
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -12,6 +13,7 @@ import org.springframework.web.reactive.function.client.support.WebClientAdapter
 import org.springframework.web.service.invoker.HttpServiceProxyFactory;
 import reactor.core.publisher.Mono;
 import reactor.util.retry.Retry;
+
 @Configuration
 public class PokeApiConnectorConfig {
 
@@ -49,12 +51,14 @@ public class PokeApiConnectorConfig {
     @Bean
     public PokeApiConnector pokeApiConnector(
             PokeApiClient pokeApiClient,
+            Cache<Integer, PokemonOverview> pokemonListCache,
             Retry retry
     ) {
         return new PokeApiConnector(
                 pokeApiClient,
                 new PokemonOverviewDtoToPokemonOverviewMapper(),
                 new PokemonDtoToPokemonDetailsMapper(),
+                pokemonListCache,
                 retry
         );
     }

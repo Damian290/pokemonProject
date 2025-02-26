@@ -1,5 +1,6 @@
 package com.rest.pokemon.external.pokeapi;
 
+import com.github.benmanes.caffeine.cache.Cache;
 import com.rest.pokemon.domain.pokemon.PokemonDetails;
 import com.rest.pokemon.domain.pokemon.PokemonOverview;
 import com.rest.pokemon.service.mapper.PokemonDtoToPokemonDetailsMapper;
@@ -15,13 +16,19 @@ public class PokeApiConnector {
     private final PokeApiClient pokeApiClient;
     private final PokemonOverviewDtoToPokemonOverviewMapper pokemonOverviewDtoToPokemonOverviewMapper;
     private final PokemonDtoToPokemonDetailsMapper pokemonDtoToPokemonDetailsMapper;
+    private final Cache<Integer, PokemonOverview> pokemonListCache;
     private final Retry pokeApiRetrySpec;
 
     public Flux<PokemonOverview> getPokemonList(int pokemonNr) {
+        PokemonOverview cachedPokemonList = pokemonListCache.getIfPresent(pokemonNr);
+        if (cachedPokemonList != null) {
+            return Flux.just(cachedPokemonList);
+        }
         return pokeApiClient.getPokemonList(pokemonNr)
                 .retryWhen(pokeApiRetrySpec)
                 .flatMapMany(response -> Flux.fromIterable(response.results()))
-                .map(pokemonOverviewDtoToPokemonOverviewMapper::map);
+                .map(pokemonOverviewDtoToPokemonOverviewMapper::map)
+                .doOnNext(result -> pokemonListCache.put(pokemonNr, result));
 
     }
 
