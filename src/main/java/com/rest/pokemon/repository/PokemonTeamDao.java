@@ -1,16 +1,21 @@
 package com.rest.pokemon.repository;
 
 import com.rest.pokemon.domain.pokemon.PokemonDetails;
+import com.rest.pokemon.domain.pokemon.PokemonTeam;
 
 import java.util.List;
 
 public interface PokemonTeamDao {
 
-    PokemonTeam create(List<PokemonDetails> pokemonDetails);
+    PokemonTeam create(String name, List<PokemonDetails> pokemonDetails);
 
-    PokemonTeam getAll();
+    List<PokemonTeam> getAll();
 
-    PokemonDetails removeFirst();
+    PokemonTeam getById(long teamId);
 
-    void updateFirstPokemon(PokemonDetails pokemonDetails);
+    PokemonTeam getByName(String teamName);
+
+    PokemonDetails removeFirst(long teamId);
+
+    void updateFirstPokemon(long teamId, PokemonDetails pokemonDetails);
 }

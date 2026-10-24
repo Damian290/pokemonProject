@@ -14,6 +14,10 @@ java {
 	}
 }
 
+tasks.withType(JavaCompile).configureEach {
+	options.compilerArgs.add('-parameters')
+}
+
 sourceSets {
 	componentTest {
 		java {
@@ -74,17 +78,35 @@ repositories {
 }
 
 dependencies {
-	implementation 'org.springframework.boot:spring-boot-starter-webflux'
+	implementation 'org.springframework.boot:spring-boot-starter-web'
+	implementation 'org.springframework.boot:spring-boot-starter-validation'
+	implementation 'org.springframework.boot:spring-boot-starter-aop'
+	implementation 'org.springframework.boot:spring-boot-starter-cache'
+	implementation 'org.springframework.boot:spring-boot-starter-actuator'
+	implementation 'org.springframework.retry:spring-retry'
+	runtimeOnly 'io.micrometer:micrometer-registry-prometheus'
+	implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.14'
 	implementation 'com.github.ben-manes.caffeine:caffeine:3.2.0'
 	compileOnly 'org.projectlombok:lombok'
 	annotationProcessor 'org.projectlombok:lombok'
 
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
-	testImplementation 'io.projectreactor:reactor-test'
 	testImplementation 'org.junit.jupiter:junit-jupiter'
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
 
 tasks.named('test') {
 	useJUnitPlatform()
+}
+
+['unitTest', 'componentTest', 'integrationTest'].each { suite ->
+	tasks.register(suite, Test) {
+		testClassesDirs = sourceSets[suite].output.classesDirs
+		classpath = sourceSets[suite].runtimeClasspath
+		useJUnitPlatform()
+	}
+}
+
+tasks.named('check') {
+	dependsOn tasks.named('unitTest'), tasks.named('componentTest')
 }

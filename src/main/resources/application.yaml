@@ -1,3 +1,14 @@
+spring:
+  threads:
+    virtual:
+      enabled: true
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: prometheus
+
 external:
   timeout:
     connect: 10s

@@ -1,20 +1,29 @@
 import com.rest.pokemon.PokemonApplication;
+import com.rest.pokemon.config.CacheConfig;
 import com.rest.pokemon.domain.pokemon.PokemonDetails;
 import com.rest.pokemon.domain.pokemon.Statistics;
+import com.rest.pokemon.api.dto.PokemonDetailsResponseDto;
+import com.rest.pokemon.api.dto.PokemonTeamResponseDto;
+import com.rest.pokemon.api.dto.StatisticsResponseDto;
 import com.rest.pokemon.external.pokeapi.PokeApiClient;
 import com.rest.pokemon.external.pokeapi.dto.details.PokemonDto;
 import com.rest.pokemon.external.pokeapi.dto.details.StatisticDto;
 import com.rest.pokemon.external.pokeapi.dto.details.StatisticsDto;
-import com.rest.pokemon.repository.PokemonTeam;
+import com.rest.pokemon.domain.pokemon.PokemonTeam;
+import com.rest.pokemon.exceptionhandler.ProblemDto;
 import com.rest.pokemon.repository.PokemonTeamDao;
+import com.rest.pokemon.repository.exception.PokemonTeamNameAlreadyExistsException;
+import com.rest.pokemon.repository.exception.PokemonTeamNotFoundException;
 import configuration.AbstractComponentTestConfiguration;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.cache.CacheManager;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.web.reactive.server.WebTestClient;
-import reactor.core.publisher.Mono;
+import org.springframework.boot.test.web.client.TestRestTemplate;
+import org.springframework.http.HttpMethod;
+import static org.junit.jupiter.api.Assertions.*;
 
 import java.util.List;
 import java.util.Random;
@@ -29,8 +38,13 @@ import static org.mockito.Mockito.*;
 @ActiveProfiles("component-test")
 public class PokemonTeamEndpointComponentTest {
 
+    private final PokemonTeam testPokemonTeam = new PokemonTeam(1, "Ash's team", List.of(
+            createPokemonDetails("Pikachu", 25, 35),
+            createPokemonDetails("Charmander", 4, 39)
+    ));
+
     @Autowired
-    private WebTestClient webTestClient;
+    private TestRestTemplate restTemplate;
 
     @Autowired
     private PokemonTeamDao pokemonTeamDao;
@@ -41,34 +55,101 @@ public class PokemonTeamEndpointComponentTest {
     @Autowired
     private Random random;
 
+    @Autowired
+    private CacheManager cacheManager;
+
     @BeforeEach
     void setUp() {
         reset(random, pokeApiClient, pokemonTeamDao);
+        cacheManager.getCache(CacheConfig.POKEMON_LIST_CACHE).clear();
+        cacheManager.getCache(CacheConfig.POKEMON_DETAILS_CACHE).clear();
     }
 
     @Test
     void shouldReturnMyPokemonTeam() {
         //given
-        var myFirstPokemon = PokemonDetails.builder().id(1).build();
-        var mySecondPokemon = PokemonDetails.builder().id(2).build();
-
-        var pokemonTeam = new PokemonTeam(
-                List.of(myFirstPokemon, mySecondPokemon)
-        );
-
-        when(pokemonTeamDao.getAll()).thenReturn(pokemonTeam);
+        var expectedResponse = new PokemonTeamResponseDto(1, "Ash's team", List.of(
+                new PokemonDetailsResponseDto(25, "Pikachu", new StatisticsResponseDto(35, 35, 35, 35)),
+                new PokemonDetailsResponseDto(4, "Charmander", new StatisticsResponseDto(39, 39, 39, 39))
+        ));
+        when(pokemonTeamDao.getById(1)).thenReturn(testPokemonTeam);
 
         //when
-        var response = webTestClient.get()
-                .uri("/v1/pokemon/team")
-                .exchange();
+        var response = restTemplate.exchange("/v1/pokemon/team/1", HttpMethod.GET, null, PokemonTeamResponseDto.class);
 
         //then
-        response.expectStatus().isOk()
-                .expectBody(PokemonTeam.class)
-                .isEqualTo(pokemonTeam);
+        assertEquals(200, response.getStatusCode().value());
+        assertEquals(expectedResponse, response.getBody());
+    }
 
-        verify(pokemonTeamDao, times(1)).getAll();
+    @Test
+    void shouldReturnNotFoundWhenTeamDoesNotExist() {
+        //given
+        var missingTeamId = 99L;
+        when(pokemonTeamDao.getById(missingTeamId))
+                .thenThrow(new PokemonTeamNotFoundException(String.valueOf(missingTeamId)));
+
+        //when
+        var response = restTemplate.exchange(
+                "/v1/pokemon/team/" + missingTeamId, HttpMethod.GET, null, ProblemDto.class);
+
+        //then
+        assertEquals(404, response.getStatusCode().value());
+        assertEquals(404, response.getBody().status());
+        assertEquals("Pokemon team not found: 99", response.getBody().detail());
+        assertEquals("/v1/pokemon/team/99", response.getBody().instance());
+    }
+
+    @Test
+    void shouldRejectBlankTeamName() {
+        //given
+        var blankTeamName = "   ";
+
+        //when
+        var response = restTemplate.exchange(
+                "/v1/pokemon/team?name=" + blankTeamName, HttpMethod.POST, null, ProblemDto.class);
+
+        //then
+        assertEquals(400, response.getStatusCode().value());
+        assertEquals(400, response.getBody().status());
+        assertEquals("/v1/pokemon/team", response.getBody().instance());
+    }
+
+    @Test
+    void shouldRejectTeamNameLongerThanTwentyCharacters() {
+        //given
+        var tooLongTeamName = "A".repeat(21);
+
+        //when
+        var response = restTemplate.exchange(
+                "/v1/pokemon/team?name=" + tooLongTeamName, HttpMethod.POST, null, ProblemDto.class);
+
+        //then
+        assertEquals(400, response.getStatusCode().value());
+        assertEquals(400, response.getBody().status());
+        assertEquals("/v1/pokemon/team", response.getBody().instance());
+    }
+
+    @Test
+    void shouldReturnAllPokemonTeams() {
+        //given
+        var firstTeam = testPokemonTeam;
+        var secondTeam = new PokemonTeam(2, "Misty's team", List.of(
+                createPokemonDetails("Staryu", 120, 30)
+        ));
+        when(pokemonTeamDao.getAll()).thenReturn(List.of(firstTeam, secondTeam));
+        var expectedResponse = List.of(
+                toTeamResponse(firstTeam),
+                toTeamResponse(secondTeam)
+        );
+
+        //when
+        var response = restTemplate.exchange(
+                "/v1/pokemon/team", HttpMethod.GET, null, PokemonTeamResponseDto[].class);
+
+        //then
+        assertEquals(200, response.getStatusCode().value());
+        assertEquals(expectedResponse, List.of(response.getBody()));
     }
 
     @Test
@@ -82,118 +163,132 @@ public class PokemonTeamEndpointComponentTest {
         mockPokeApiForId(5);
         mockPokeApiForId(6);
 
-        var expectedList = createPokemonDetailsList();
-        var expectedPokemonTeam = new PokemonTeam(expectedList);
-        when(pokemonTeamDao.create(expectedList)).thenReturn(expectedPokemonTeam);
+        var expectedDetails = createPokemonDetailsList();
+        var expectedTeam = new PokemonTeam(1, "Ash", expectedDetails);
+        when(pokemonTeamDao.create("Ash", expectedDetails)).thenReturn(expectedTeam);
 
         //when
-        var response = webTestClient.post()
-                .uri("/v1/pokemon/team")
-                .exchange();
+        var response = restTemplate.exchange("/v1/pokemon/team?name=Ash", HttpMethod.POST, null, PokemonTeamResponseDto.class);
 
         //then
-        response.expectStatus().isOk()
-                .expectBody(PokemonTeam.class)
-                .isEqualTo(expectedPokemonTeam);
+        assertEquals(201, response.getStatusCode().value());
+        assertEquals(toTeamResponse(expectedTeam), response.getBody());
+    }
 
-        verify(pokemonTeamDao, times(1)).create(expectedList);
+    @Test
+    void shouldReturnConflictWhenCreatingTeamWithExistingName() {
+        //given
+        when(random.ints(anyInt(), anyInt()))
+                .thenAnswer(invocation -> IntStream.of(1, 2, 3, 4, 5, 6));
+        IntStream.rangeClosed(1, 6).forEach(this::mockPokeApiForId);
+
+        var expectedTeam = new PokemonTeam(1, "Ash", createPokemonDetailsList());
+        when(pokemonTeamDao.create(eq("Ash"), anyList()))
+                .thenReturn(expectedTeam)
+                .thenThrow(new PokemonTeamNameAlreadyExistsException("Ash"));
+
+        //when
+        var createdResponse = restTemplate.exchange(
+                "/v1/pokemon/team?name=Ash", HttpMethod.POST, null, PokemonTeamResponseDto.class);
+        var duplicateResponse = restTemplate.exchange(
+                "/v1/pokemon/team?name=Ash", HttpMethod.POST, null, ProblemDto.class);
+
+        //then
+        assertEquals(201, createdResponse.getStatusCode().value());
+        assertEquals(toTeamResponse(expectedTeam), createdResponse.getBody());
+        assertEquals(409, duplicateResponse.getStatusCode().value());
+        assertEquals("A team with this name already exists.", duplicateResponse.getBody().detail());
+        assertEquals("/v1/pokemon/team", duplicateResponse.getBody().instance());
     }
 
     @Test
     void shouldReturnMyWinnerPokemonWhenMyPokemonWinAgainstOpponent() {
         //given
         var expectedWinner = createPokemonDetails("strongOne", 1, 1000);
+        var expectedResponse = new PokemonDetailsResponseDto(1, "strongOne",
+                new StatisticsResponseDto(1000, 1000, 1000, 1000));
         var myPokemonTeam = new PokemonTeam(
                 List.of(expectedWinner)
         );
 
-        when(pokemonTeamDao.getAll()).thenReturn(myPokemonTeam);
+        when(pokemonTeamDao.getByName("Ash")).thenReturn(new PokemonTeam(1, "Ash", myPokemonTeam.pokemonDetails()));
         var opponentId = 100;
         when(random.nextInt(anyInt(), anyInt())).thenReturn(opponentId);
-        when(pokeApiClient.getPokemonDetails(opponentId)).thenReturn(Mono.just(createPokemonDto("wekaOne", 1)));
+        when(pokeApiClient.getPokemonDetails(opponentId)).thenReturn(createPokemonDto("wekaOne", 1));
 
         //when
-        var response = webTestClient.put()
-                .uri("/v1/pokemon/team/battle")
-                .exchange();
+        var response = restTemplate.exchange("/v1/pokemon/team/battle?name=Ash", HttpMethod.PUT, null, PokemonDetailsResponseDto.class);
 
         //then
-        response.expectStatus().isOk()
-                .expectBody(PokemonDetails.class).isEqualTo(expectedWinner);
+        assertEquals(200, response.getStatusCode().value());
+        assertEquals(expectedResponse, response.getBody());
 
-        verify(pokemonTeamDao, times(1)).getAll();
-        verify(random, times(1)).nextInt(anyInt(), anyInt());
-        verify(pokeApiClient, times(1)).getPokemonDetails(opponentId);
-        verify(pokemonTeamDao,times(1)).updateFirstPokemon(expectedWinner);
-        verify(pokemonTeamDao, times(0)).removeFirst();
     }
 
     @Test
     void shouldReturnOpponentPokemonWhenMyPokemonLoseAgainstOpponentAndRemoveItFromMyPokemonTeam() {
         //given
         var myWeakPokemon = createPokemonDetails("weakOne", 1, 1);
+        var expectedResponse = new PokemonDetailsResponseDto(100, "strongOne",
+                new StatisticsResponseDto(1000, 1000, 1000, 1000));
         var myPokemonTeam = new PokemonTeam(
                 List.of(myWeakPokemon)
         );
 
-        when(pokemonTeamDao.getAll()).thenReturn(myPokemonTeam);
+        when(pokemonTeamDao.getByName("Ash")).thenReturn(new PokemonTeam(1, "Ash", myPokemonTeam.pokemonDetails()));
         var opponentId = 100;
         when(random.nextInt(anyInt(), anyInt())).thenReturn(opponentId);
         var strongOpponent = createPokemonDto("strongOne", 1000);
-        var expectedWinner = createPokemonDetails("strongOne", opponentId, 1000);
-        when(pokeApiClient.getPokemonDetails(opponentId)).thenReturn(Mono.just(strongOpponent));
+        when(pokeApiClient.getPokemonDetails(opponentId)).thenReturn(strongOpponent);
 
         //when
-        var response = webTestClient.put()
-                .uri("/v1/pokemon/team/battle")
-                .exchange();
+        var response = restTemplate.exchange("/v1/pokemon/team/battle?name=Ash", HttpMethod.PUT, null, PokemonDetailsResponseDto.class);
 
         //then
-        response.expectStatus().isOk()
-                .expectBody(PokemonDetails.class).isEqualTo(expectedWinner);
+        assertEquals(200, response.getStatusCode().value());
+        assertEquals(expectedResponse, response.getBody());
+        verify(pokemonTeamDao).removeFirst(1);
 
-        verify(pokemonTeamDao, times(1)).getAll();
-        verify(random, times(1)).nextInt(anyInt(), anyInt());
-        verify(pokeApiClient, times(1)).getPokemonDetails(opponentId);
-        verify(pokemonTeamDao, times(1)).removeFirst();
     }
 
     @Test
     void shouldReturnBadRequestWhenBattleEndpointIsAskedWithoutAnyPokemonsInTeam() {
         //given
         var myPokemonTeam = new PokemonTeam(List.of());
-        when(pokemonTeamDao.getAll()).thenReturn(myPokemonTeam);
+        when(pokemonTeamDao.getByName("Ash")).thenReturn(new PokemonTeam(1, "Ash", myPokemonTeam.pokemonDetails()));
 
         //when
-        var response = webTestClient.put()
-                .uri("/v1/pokemon/team/battle")
-                .exchange();
+        var response = restTemplate.exchange("/v1/pokemon/team/battle?name=Ash", HttpMethod.PUT, null, ProblemDto.class);
 
         //then
-        response.expectStatus().isBadRequest();
+        assertEquals(400, response.getStatusCode().value());
+        assertEquals(400, response.getBody().status());
+        assertEquals("/v1/pokemon/team/battle", response.getBody().instance());
     }
 
     private void mockPokeApiForId(int id) {
         when(pokeApiClient.getPokemonDetails(id)).thenReturn(
-                Mono.just(
-                        PokemonDto
+                PokemonDto
                                 .builder()
                                 .name("Pokemon" + id)
                                 .stats(List.of())
                                 .build()
-                )
         );
     }
 
     private List<PokemonDetails> createPokemonDetailsList() {
         return List.of(
-                PokemonDetails.builder().id(1).name("Pokemon1").statistics(Statistics.builder().build()).build(),
-                PokemonDetails.builder().id(2).name("Pokemon2").statistics(Statistics.builder().build()).build(),
-                PokemonDetails.builder().id(3).name("Pokemon3").statistics(Statistics.builder().build()).build(),
-                PokemonDetails.builder().id(4).name("Pokemon4").statistics(Statistics.builder().build()).build(),
-                PokemonDetails.builder().id(5).name("Pokemon5").statistics(Statistics.builder().build()).build(),
-                PokemonDetails.builder().id(6).name("Pokemon6").statistics(Statistics.builder().build()).build()
+                PokemonDetails.builder().id(1).name("Pokemon1").statistics(testStatistics()).build(),
+                PokemonDetails.builder().id(2).name("Pokemon2").statistics(testStatistics()).build(),
+                PokemonDetails.builder().id(3).name("Pokemon3").statistics(testStatistics()).build(),
+                PokemonDetails.builder().id(4).name("Pokemon4").statistics(testStatistics()).build(),
+                PokemonDetails.builder().id(5).name("Pokemon5").statistics(testStatistics()).build(),
+                PokemonDetails.builder().id(6).name("Pokemon6").statistics(testStatistics()).build()
         );
+    }
+
+    private Statistics testStatistics() {
+        return new Statistics(1, 1, 0, 0);
     }
 
     private PokemonDetails createPokemonDetails(String name, int id, int statsValue) {
@@ -227,6 +322,18 @@ public class PokemonTeamEndpointComponentTest {
                 .name(name)
                 .stats(statisticsList)
                 .build();
+    }
+
+    private PokemonTeamResponseDto toTeamResponse(PokemonTeam team) {
+        return new PokemonTeamResponseDto(team.id(), team.name(),
+                team.pokemonDetails().stream().map(this::toDetailsResponse).toList());
+    }
+
+    private PokemonDetailsResponseDto toDetailsResponse(PokemonDetails pokemon) {
+        var stats = pokemon.statistics();
+        var responseStats = stats == null ? null : new StatisticsResponseDto(
+                stats.getHp(), stats.getAttack(), stats.getDefence(), stats.getSpeed());
+        return new PokemonDetailsResponseDto(pokemon.id(), pokemon.name(), responseStats);
     }
 
 }

@@ -19,14 +19,14 @@ public class PokeApiClientIntegrationTest {
     @Test
     void shouldReturnListOfPokemon() {
         //given
-        var pokemonNr = 151;
+        var pokemonCount = 151;
         //when
-        var result = pokeApiClient.getPokemonList(pokemonNr).block();
+        var result = pokeApiClient.getPokemonList(pokemonCount);
 
         //then
         assertNotNull(result);
         assertNotNull(result.results());
-        assertEquals(pokemonNr, result.results().size());
+        assertEquals(pokemonCount, result.results().size());
     }
 
     @Test
@@ -34,7 +34,7 @@ public class PokeApiClientIntegrationTest {
         //given
         var pokemonNr = 1;
         //when
-        var result = pokeApiClient.getPokemonDetails(pokemonNr).block();
+        var result = pokeApiClient.getPokemonDetails(pokemonNr);
 
         //then
         assertNotNull(result);

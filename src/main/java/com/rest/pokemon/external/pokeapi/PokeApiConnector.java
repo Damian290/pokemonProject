@@ -1,39 +1,53 @@
 package com.rest.pokemon.external.pokeapi;
 
-import com.github.benmanes.caffeine.cache.Cache;
-import com.rest.pokemon.domain.pokemon.PokemonDetails;
-import com.rest.pokemon.domain.pokemon.PokemonOverview;
-import com.rest.pokemon.service.mapper.PokemonDtoToPokemonDetailsMapper;
-import com.rest.pokemon.service.mapper.PokemonOverviewDtoToPokemonOverviewMapper;
+import com.rest.pokemon.config.CacheConfig;
+import com.rest.pokemon.external.pokeapi.dto.details.PokemonDto;
+import com.rest.pokemon.external.pokeapi.dto.list.PokemonOverviewDto;
 import lombok.RequiredArgsConstructor;
-import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
-import reactor.util.retry.Retry;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.retry.annotation.Backoff;
+import org.springframework.retry.annotation.Recover;
+import org.springframework.retry.annotation.Retryable;
+import org.springframework.web.client.RestClientException;
+import org.springframework.web.client.ResourceAccessException;
+import org.springframework.web.client.RestClientResponseException;
+
+import java.util.List;
 
 @RequiredArgsConstructor
 public class PokeApiConnector {
-
     private final PokeApiClient pokeApiClient;
-    private final PokemonOverviewDtoToPokemonOverviewMapper pokemonOverviewDtoToPokemonOverviewMapper;
-    private final PokemonDtoToPokemonDetailsMapper pokemonDtoToPokemonDetailsMapper;
-    private final Cache<Integer, PokemonOverview> pokemonListCache;
-    private final Retry pokeApiRetrySpec;
 
-    public Flux<PokemonOverview> getPokemonList(int pokemonNr) {
-        PokemonOverview cachedPokemonList = pokemonListCache.getIfPresent(pokemonNr);
-        if (cachedPokemonList != null) {
-            return Flux.just(cachedPokemonList);
-        }
-        return pokeApiClient.getPokemonList(pokemonNr)
-                .retryWhen(pokeApiRetrySpec)
-                .flatMapMany(response -> Flux.fromIterable(response.results()))
-                .map(pokemonOverviewDtoToPokemonOverviewMapper::map)
-                .doOnNext(result -> pokemonListCache.put(pokemonNr, result));
-
+    @Retryable(
+            retryFor = {ResourceAccessException.class, RestClientResponseException.class},
+            exceptionExpression = "@pokeApiRetryPolicy.isRetryable(#root)",
+            maxAttempts = 3,
+            backoff = @Backoff(delay = 1000, multiplier = 2, maxDelay = 6000, random = true)
+    )
+    @Cacheable(cacheNames = CacheConfig.POKEMON_LIST_CACHE, key = "#pokemonCount")
+    public List<PokemonOverviewDto> getPokemonList(int pokemonCount) {
+        var response = pokeApiClient.getPokemonList(pokemonCount);
+        return response.results();
     }
 
-    public Mono<PokemonDetails> getPokemonDetails(int id) {
-        return pokeApiClient.getPokemonDetails(id)
-                .map(it -> pokemonDtoToPokemonDetailsMapper.map(it, id));
+    @Recover
+    public List<PokemonOverviewDto> recoverPokemonList(RestClientException exception, int pokemonCount) {
+        throw new PokeApiPokemonListException(pokemonCount, exception);
+    }
+
+    @Retryable(
+            retryFor = {ResourceAccessException.class, RestClientResponseException.class},
+            exceptionExpression = "@pokeApiRetryPolicy.isRetryable(#root)",
+            maxAttempts = 3,
+            backoff = @Backoff(delay = 1000, multiplier = 2, maxDelay = 6000, random = true)
+    )
+    @Cacheable(cacheNames = CacheConfig.POKEMON_DETAILS_CACHE, key = "#id")
+    public PokemonDto getPokemonDetails(int id) {
+        return pokeApiClient.getPokemonDetails(id);
+    }
+
+    @Recover
+    public PokemonDto recoverPokemonDetails(RestClientException exception, int id) {
+        throw new PokeApiPokemonDetailsException(id, exception);
     }
 }
