@@ -1,6 +1,5 @@
 package com.rest.pokemon.repository;
 
-import com.rest.pokemon.repository.mapper.PokemonEntityMapper;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -9,8 +8,9 @@ public class PokemonTeamDaoConfig {
 
     @Bean
     public PokemonTeamDao pokemonTeamDao(
-            PokemonEntityMapper mapper
+            JpaPokemonTeamRepository teamRepository,
+            JpaPokemonEntityMapper mapper
     ) {
-        return new PokemonTeamDaoImpl(mapper);
+        return new JpaPokemonTeamDao(teamRepository, mapper);
     }
 }

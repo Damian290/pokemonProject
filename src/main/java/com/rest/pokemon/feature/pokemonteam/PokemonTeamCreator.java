@@ -26,6 +26,7 @@ public class PokemonTeamCreator {
                         () -> pokemonMapper.map(pokeApiConnector.getPokemonDetails(id), id))
                 .toList();
         var pokemons = virtualThreadTaskRunner.runAll(tasks);
-        return pokemonTeamDao.create(teamName, pokemons);
+        var team = new PokemonTeam(null, teamName, pokemons);
+        return pokemonTeamDao.create(team);
     }
 }

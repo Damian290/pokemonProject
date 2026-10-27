@@ -6,9 +6,23 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class PokemonTeamTest {
+
+    @Test
+    void shouldAllowTeamWithoutIdBeforePersistence() {
+        //given
+        var teamName = "Ash";
+
+        //when
+        var team = new PokemonTeam(null, teamName, List.of());
+
+        //then
+        assertNull(team.id());
+        assertEquals(teamName, team.name());
+    }
 
     @Test
     void shouldRejectNonPositiveTeamId() {

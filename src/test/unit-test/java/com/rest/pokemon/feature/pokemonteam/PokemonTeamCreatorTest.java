@@ -41,7 +41,7 @@ class PokemonTeamCreatorTest {
                 .map(id -> pokemon(id, "Pokemon", 50, 20, 10, 15))
                 .toList();
         var expectedTeam = new PokemonTeam(1, "test", expectedPokemons);
-        when(pokemonTeamDao.create(eq("test"), anyList())).thenReturn(expectedTeam);
+        when(pokemonTeamDao.create(any(PokemonTeam.class))).thenReturn(expectedTeam);
 
         //when
         var result = sut.create("test");
@@ -50,9 +50,10 @@ class PokemonTeamCreatorTest {
         assertSame(expectedTeam, result);
         verify(pokemonIdsSelector).selectSixIds();
         pokemonIds.forEach(id -> verify(pokeApiConnector).getPokemonDetails(id));
-        var pokemonsCaptor = ArgumentCaptor.forClass(List.class);
-        verify(pokemonTeamDao).create(eq("test"), pokemonsCaptor.capture());
-        assertThat(pokemonsCaptor.getValue()).usingRecursiveComparison().isEqualTo(expectedPokemons);
+        var teamCaptor = ArgumentCaptor.forClass(PokemonTeam.class);
+        verify(pokemonTeamDao).create(teamCaptor.capture());
+        assertThat(teamCaptor.getValue()).usingRecursiveComparison()
+                .isEqualTo(new PokemonTeam(null, "test", expectedPokemons));
     }
 
     @Test
@@ -68,7 +69,7 @@ class PokemonTeamCreatorTest {
 
         //then
         assertSame(failure, thrown);
-        verify(pokemonTeamDao, never()).create(eq("test"), anyList());
+        verify(pokemonTeamDao, never()).create(any(PokemonTeam.class));
     }
 
     private Pokemon pokemon(int id, String name, long hp, long attack, long defence, long speed) {

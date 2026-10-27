@@ -6,12 +6,12 @@ import java.util.List;
 import java.util.Objects;
 
 public record PokemonTeam(
-        long id,
+        Long id,
         String name,
         List<Pokemon> pokemons
 ) {
     public PokemonTeam {
-        if (id <= 0) {
+        if (id != null && id <= 0) {
             throw new IllegalArgumentException("Team ID must be positive");
         }
         if (name == null || name.isBlank()) {
@@ -27,6 +27,10 @@ public record PokemonTeam(
             }
         }
         pokemons = pokemons.stream().map(Pokemon::copy).toList();
+    }
+
+    public PokemonTeam(long id, String name, List<Pokemon> pokemons) {
+        this(Long.valueOf(id), name, pokemons);
     }
 
     @Override

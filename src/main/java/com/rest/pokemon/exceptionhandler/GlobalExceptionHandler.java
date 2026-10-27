@@ -7,6 +7,7 @@ import com.rest.pokemon.repository.exception.PokemonTeamNameAlreadyExistsExcepti
 import com.rest.pokemon.repository.exception.PokemonTeamNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -36,6 +37,14 @@ public class GlobalExceptionHandler {
         log.debug("Cannot create Pokemon team because its name is already in use", exception);
         return ResponseEntity.status(HttpStatus.CONFLICT)
                 .body(buildProblemDto(HttpStatus.CONFLICT, "A team with this name already exists.", request));
+    }
+
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<ProblemDto> handleDataIntegrityViolation(
+            DataIntegrityViolationException exception, HttpServletRequest request) {
+        log.error("Request conflicts with existing data", exception);
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(buildProblemDto(HttpStatus.CONFLICT, "The request conflicts with existing data.", request));
     }
 
     @ExceptionHandler(PokemonTeamNotFoundException.class)

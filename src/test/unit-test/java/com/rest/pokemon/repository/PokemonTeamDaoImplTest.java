@@ -28,7 +28,7 @@ class PokemonTeamDaoImplTest {
                 new Pokemon(25, "Pikachu", testStats), new Pokemon(6, "Charizard", testStats)));
 
         //when
-        var createdTeam = sut.create("starter", List.of(pikachu, charizard));
+        var createdTeam = sut.create(new PokemonTeam(null, "starter", List.of(pikachu, charizard)));
         pikachu.receiveDamage(10);
         pikachu.receiveDamage(1);
         createdTeam.pokemons().getFirst().receiveDamage(10);
@@ -43,7 +43,7 @@ class PokemonTeamDaoImplTest {
         //given
         var pokemon = new Pokemon(1, "Bulbasaur", testStats);
         var expectedTeam = new PokemonTeam(1, "test", List.of(pokemon));
-        sut.create("test", List.of(pokemon));
+        sut.create(new PokemonTeam(null, "test", List.of(pokemon)));
 
         //when
         var result = sut.getAll();
@@ -56,11 +56,11 @@ class PokemonTeamDaoImplTest {
     void shouldStoreMultipleTeamsWithUniqueIdsAndNames() {
         //given
         var firstPokemon = new Pokemon(25, "Pikachu", testStats);
-        var first = sut.create("Ash", List.of(firstPokemon));
+        var first = sut.create(new PokemonTeam(null, "Ash", List.of(firstPokemon)));
 
         //when
         var secondPokemon = new Pokemon(7, "Squirtle", testStats);
-        var second = sut.create("Misty", List.of(secondPokemon));
+        var second = sut.create(new PokemonTeam(null, "Misty", List.of(secondPokemon)));
 
         //then
         assertThat(first).usingRecursiveComparison()
@@ -73,11 +73,11 @@ class PokemonTeamDaoImplTest {
     @Test
     void shouldRejectDuplicateTeamName() {
         //given
-        sut.create("Ash", List.of());
+        sut.create(new PokemonTeam(null, "Ash", List.of()));
 
         //when
         var thrown = assertThrows(PokemonTeamNameAlreadyExistsException.class,
-                () -> sut.create("Ash", List.of()));
+                () -> sut.create(new PokemonTeam(null, "Ash", List.of())));
 
         //then
         assertEquals("Pokemon team name already exists: Ash", thrown.getMessage());
@@ -103,7 +103,7 @@ class PokemonTeamDaoImplTest {
         //given
         var firstPokemon = new Pokemon(16, "Pidgey", testStats);
         var secondPokemon = new Pokemon(19, "Rattata", testStats);
-        var team = sut.create("test", List.of(firstPokemon, secondPokemon));
+        var team = sut.create(new PokemonTeam(null, "test", List.of(firstPokemon, secondPokemon)));
         var updatedPokemon = new Pokemon(16, "Pidgey", new Statistics(10, 20, 30, 40));
         var updatedTeam = team.updatePokemonState(updatedPokemon);
         var expectedTeam = new PokemonTeam(1, "test", List.of(
@@ -123,7 +123,7 @@ class PokemonTeamDaoImplTest {
         //given
         var firstPokemon = new Pokemon(133, "Eevee", testStats);
         var secondPokemon = new Pokemon(143, "Snorlax", testStats);
-        var team = sut.create("test", List.of(firstPokemon, secondPokemon));
+        var team = sut.create(new PokemonTeam(null, "test", List.of(firstPokemon, secondPokemon)));
 
         //when
         sut.save(team.removePokemon(firstPokemon));

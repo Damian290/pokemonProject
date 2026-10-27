@@ -1,6 +1,5 @@
 package com.rest.pokemon.repository;
 
-import com.rest.pokemon.domain.pokemon.Pokemon;
 import com.rest.pokemon.domain.pokemon.PokemonTeam;
 import com.rest.pokemon.repository.entity.PokemonTeamEntity;
 import com.rest.pokemon.repository.exception.PokemonTeamNameAlreadyExistsException;
@@ -20,11 +19,14 @@ public class PokemonTeamDaoImpl implements PokemonTeamDao {
     private long nextId = 1;
 
     @Override
-    public synchronized PokemonTeam create(String name, List<Pokemon> newPokemons) {
-        if (pokemonTeams.stream().anyMatch(team -> team.name().equals(name))) {
-            throw new PokemonTeamNameAlreadyExistsException(name);
+    public synchronized PokemonTeam create(PokemonTeam newTeam) {
+        if (newTeam.id() != null) {
+            throw new IllegalArgumentException("New team must not have an ID");
         }
-        var team = new PokemonTeam(nextId, name, newPokemons);
+        if (pokemonTeams.stream().anyMatch(team -> team.name().equals(newTeam.name()))) {
+            throw new PokemonTeamNameAlreadyExistsException(newTeam.name());
+        }
+        var team = new PokemonTeam(nextId, newTeam.name(), newTeam.pokemons());
         var entity = toEntity(team);
         pokemonTeams.add(entity);
         nextId++;

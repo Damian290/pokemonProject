@@ -72,7 +72,7 @@ public class PokemonTeamEndpointComponentTest {
                 new PokemonDetailsResponseDto(25, "Pikachu", new StatisticsResponseDto(35, 35, 35, 35)),
                 new PokemonDetailsResponseDto(4, "Charmander", new StatisticsResponseDto(39, 39, 39, 39))
         ));
-        pokemonTeamDao.create(testPokemonTeam.name(), testPokemonTeam.pokemons());
+        pokemonTeamDao.create(new PokemonTeam(null, testPokemonTeam.name(), testPokemonTeam.pokemons()));
 
         //when
         var response = restTemplate.exchange("/v1/pokemon/team/1", HttpMethod.GET, null, PokemonTeamResponseDto.class);
@@ -135,8 +135,8 @@ public class PokemonTeamEndpointComponentTest {
         var secondTeam = new PokemonTeam(2, "Misty's team", List.of(
                 createPokemon("Staryu", 120, 30)
         ));
-        pokemonTeamDao.create(firstTeam.name(), firstTeam.pokemons());
-        pokemonTeamDao.create(secondTeam.name(), secondTeam.pokemons());
+        pokemonTeamDao.create(new PokemonTeam(null, firstTeam.name(), firstTeam.pokemons()));
+        pokemonTeamDao.create(new PokemonTeam(null, secondTeam.name(), secondTeam.pokemons()));
         var expectedResponse = List.of(
                 toTeamResponse(firstTeam),
                 toTeamResponse(secondTeam)
@@ -203,7 +203,7 @@ public class PokemonTeamEndpointComponentTest {
         var expectedResponse = new PokemonDetailsResponseDto(1, "strongOne",
                 new StatisticsResponseDto(1000, 1000, 1000, 1000));
         var myPokemonTeam = new PokemonTeam(1, "Ash", List.of(expectedWinner));
-        pokemonTeamDao.create(myPokemonTeam.name(), myPokemonTeam.pokemons());
+        pokemonTeamDao.create(new PokemonTeam(null, myPokemonTeam.name(), myPokemonTeam.pokemons()));
         var opponentId = 100;
         when(random.nextInt(anyInt(), anyInt())).thenReturn(opponentId);
         when(pokeApiClient.getPokemonDetails(opponentId)).thenReturn(createPokemonDto("wekaOne", 1));
@@ -265,7 +265,7 @@ public class PokemonTeamEndpointComponentTest {
         var expectedResponse = new PokemonDetailsResponseDto(100, "strongOne",
                 new StatisticsResponseDto(1000, 1000, 1000, 1000));
         var myPokemonTeam = new PokemonTeam(1, "Ash", List.of(myWeakPokemon));
-        pokemonTeamDao.create(myPokemonTeam.name(), myPokemonTeam.pokemons());
+        pokemonTeamDao.create(new PokemonTeam(null, myPokemonTeam.name(), myPokemonTeam.pokemons()));
         var opponentId = 100;
         when(random.nextInt(anyInt(), anyInt())).thenReturn(opponentId);
         var strongOpponent = createPokemonDto("strongOne", 1000);
@@ -287,7 +287,7 @@ public class PokemonTeamEndpointComponentTest {
     void shouldReturnBadRequestWhenBattleEndpointIsAskedWithoutAnyPokemonsInTeam() {
         //given
         var myPokemonTeam = new PokemonTeam(1, "Ash", List.of());
-        pokemonTeamDao.create(myPokemonTeam.name(), myPokemonTeam.pokemons());
+        pokemonTeamDao.create(new PokemonTeam(null, myPokemonTeam.name(), myPokemonTeam.pokemons()));
 
         //when
         var response = restTemplate.exchange("/v1/pokemon/team/battle?name=Ash", HttpMethod.PUT, null, ProblemDto.class);
