@@ -22,6 +22,9 @@ public record PokemonTeam(
         var pokemonIds = new HashSet<Integer>();
         for (var pokemon : pokemons) {
             Objects.requireNonNull(pokemon, "Pokemon team cannot contain null");
+            if (pokemon.isDead()) {
+                throw new IllegalArgumentException("Pokemon team cannot contain a defeated Pokemon: " + pokemon.id());
+            }
             if (!pokemonIds.add(pokemon.id())) {
                 throw new IllegalArgumentException("Duplicate Pokemon ID in team: " + pokemon.id());
             }
