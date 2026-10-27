@@ -4,7 +4,7 @@ import com.rest.pokemon.api.dto.PokemonDetailsResponseDto;
 import com.rest.pokemon.api.dto.PokemonOverviewResponseDto;
 import com.rest.pokemon.api.dto.PokemonTeamResponseDto;
 import com.rest.pokemon.api.dto.StatisticsResponseDto;
-import com.rest.pokemon.domain.pokemon.PokemonDetails;
+import com.rest.pokemon.domain.pokemon.Pokemon;
 import com.rest.pokemon.domain.pokemon.PokemonOverview;
 import com.rest.pokemon.domain.pokemon.PokemonTeam;
 import com.rest.pokemon.domain.pokemon.Statistics;
@@ -32,7 +32,7 @@ class PokemonApiMapperTest {
     @Test
     void shouldMapPokemonDetailsToResponseDto() {
         //given
-        var pokemon = new PokemonDetails(25, "Pikachu", new Statistics(35, 55, 40, 90));
+        var pokemon = new Pokemon(25, "Pikachu", new Statistics(35, 55, 40, 90));
 
         //when
         var response = sut.toResponse(pokemon);
@@ -45,7 +45,7 @@ class PokemonApiMapperTest {
     @Test
     void shouldMapPokemonTeamAndItsMembersToResponseDto() {
         //given
-        var member = new PokemonDetails(25, "Pikachu", new Statistics(35, 55, 40, 90));
+        var member = new Pokemon(25, "Pikachu", new Statistics(35, 55, 40, 90));
         var team = new PokemonTeam(3, "Ash", List.of(member));
 
         //when

@@ -1,6 +1,6 @@
 package com.rest.pokemon.domain.battle;
 
-import com.rest.pokemon.domain.pokemon.PokemonDetails;
+import com.rest.pokemon.domain.pokemon.Pokemon;
 import com.rest.pokemon.domain.pokemon.Statistics;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -11,120 +11,113 @@ import static org.junit.jupiter.api.Assertions.*;
 class DuelRingTest {
 
     @Test
-    void shouldChoosePokemonWithGreaterSpeedToAttackFirst() {
+    void shouldLetFasterPokemonAttackFirst() {
         //given
-        var myPokemon = pokemon(1, "Pikachu", 50, 20, 10, 100);
-        var opponent = pokemon(2, "Charmander", 50, 20, 10, 80);
+        var myPokemon = pokemon(1, 100);
+        var opponent = pokemon(2, 80);
 
         //when
         var duelRing = new DuelRing(myPokemon, opponent);
+        while (!duelRing.isDuelFinished()) {
+            duelRing.performTurn();
+        }
 
         //then
-        assertSame(myPokemon, duelRing.getCurrentTurn().getPokemonDetails());
+        assertEquals(myPokemon.id(), duelRing.getWinner().id());
     }
 
     @Test
     void shouldChooseMyPokemonFirstWhenSpeedsAreEqual() {
         //given
-        var myPokemon = pokemon(1, "Pikachu", 50, 20, 10, 100);
-        var opponent = pokemon(2, "Charmander", 50, 20, 10, 100);
+        var myPokemon = pokemon(1, 100);
+        var opponent = pokemon(2, 100);
 
         //when
         var duelRing = new DuelRing(myPokemon, opponent);
+        while (!duelRing.isDuelFinished()) {
+            duelRing.performTurn();
+        }
 
         //then
-        assertSame(myPokemon, duelRing.getCurrentTurn().getPokemonDetails());
+        assertEquals(myPokemon.id(), duelRing.getWinner().id());
     }
 
     @Test
-    void shouldReturnOtherPokemonAsDamageReceiverWhenMyPokemonSpeedIsHigher() {
+    void shouldAlternateTurns() {
         //given
-        var myPokemon = pokemon(1, "Pikachu", 50, 20, 10, 100);
-        var opponent = pokemon(2, "Charmander", 50, 20, 10, 80);
-        var duelRing = new DuelRing(myPokemon, opponent);
+        var duelRing = new DuelRing(pokemon(1, 100), pokemon(2, 80));
 
         //when
-        var damageReceiver = duelRing.damageReceiver();
+        while (!duelRing.isDuelFinished()) {
+            duelRing.performTurn();
+        }
 
         //then
-        assertSame(opponent, damageReceiver.getPokemonDetails());
+        assertEquals(10, duelRing.getWinner().statistics().hp());
+        assertEquals(0, duelRing.getDefeated().statistics().hp());
     }
 
     @Test
-    void shouldNotHaveWinnerWhileBothPokemonAreAlive() {
+    void shouldNotExposeWinnerBeforeDuelEnds() {
         //given
-        var duelRing = new DuelRing(
-                pokemon(1, "Pikachu", 50, 20, 10, 100),
-                pokemon(2, "Charmander", 50, 20, 10, 80));
+        var duelRing = new DuelRing(pokemon(1, 100), pokemon(2, 80));
 
         //when
-        var winner = duelRing.getWinner();
+        var thrown = assertThrows(IllegalStateException.class, duelRing::getWinner);
 
         //then
-        assertNull(winner);
+        assertEquals("Duel is not finished yet", thrown.getMessage());
         assertFalse(duelRing.isDuelFinished());
     }
 
     @ParameterizedTest
-    @CsvSource({"false", "true"})
-    void shouldIdentifyWhetherMyPokemonIsWinner(boolean myPokemonWins) {
+    @CsvSource({"true, 100, 80", "false, 80, 100"})
+    void shouldIdentifyWinner(boolean myPokemonWins, long mySpeed, long opponentSpeed) {
         //given
-        var myPokemon = pokemon(1, "Pikachu", 50, 20, 10, 100);
-        var opponent = pokemon(2, "Charmander", 50, 20, 10, 80);
-        var duelRing = new DuelRing(myPokemon, opponent);
-        if (myPokemonWins) {
-            duelRing.getOpponent().getPokemonDetails().statistics().setHp(0);
-        } else {
-            duelRing.getMyPokemon().getPokemonDetails().statistics().setHp(0);
+        var duelRing = new DuelRing(pokemon(1, mySpeed), pokemon(2, opponentSpeed));
+
+        //when
+        while (!duelRing.isDuelFinished()) {
+            duelRing.performTurn();
+        }
+
+        //then
+        assertTrue(duelRing.isDuelFinished());
+        assertEquals(myPokemonWins, duelRing.isMyPokemonWinner());
+        assertEquals(myPokemonWins ? 1 : 2, duelRing.getWinner().id());
+        assertEquals(myPokemonWins ? 2 : 1, duelRing.getDefeated().id());
+    }
+
+    @Test
+    void shouldRejectDefeatedPokemonAtDuelStart() {
+        //given
+        var defeated = pokemon(1, 100);
+        defeated.receiveDamage(50);
+
+        //when
+        var thrown = assertThrows(IllegalStateException.class,
+                () -> new DuelRing(defeated, pokemon(2, 80)));
+
+        //then
+        assertEquals("A Pokemon with zero HP cannot enter a duel", thrown.getMessage());
+    }
+
+    @Test
+    void shouldNotExposeMutableWinnerState() {
+        //given
+        var duelRing = new DuelRing(pokemon(1, 100), pokemon(2, 80));
+        while (!duelRing.isDuelFinished()) {
+            duelRing.performTurn();
         }
 
         //when
-        var result = duelRing.isMyPokemonWinner();
+        duelRing.getWinner().receiveDamage(10);
 
         //then
-        assertEquals(myPokemonWins, result);
+        assertEquals(10, duelRing.getWinner().statistics().hp());
     }
 
-    @Test
-    void shouldRejectPokemonWithNonPositiveHp() {
-        //given
-        var myPokemon = pokemon(1, "Pikachu", 0, 20, 10, 100);
-        var opponent = pokemon(2, "Charmander", 50, 20, 10, 80);
-
-        //when
-        var thrown = assertThrows(IllegalStateException.class, () -> new DuelRing(myPokemon, opponent));
-
-        //then
-        assertNotNull(thrown.getMessage());
-    }
-
-    @Test
-    void shouldRejectPokemonWithNonPositiveAttack() {
-        //given
-        var myPokemon = pokemon(1, "Pikachu", 50, 0, 10, 100);
-        var opponent = pokemon(2, "Charmander", 50, 20, 10, 80);
-
-        //when
-        var thrown = assertThrows(IllegalStateException.class, () -> new DuelRing(myPokemon, opponent));
-
-        //then
-        assertNotNull(thrown.getMessage());
-    }
-
-    @Test
-    void shouldRejectPokemonWithoutStatistics() {
-        //given
-        var myPokemon = new PokemonDetails(1, "Pikachu", null);
-        var opponent = pokemon(2, "Charmander", 50, 20, 10, 80);
-
-        //when
-        var thrown = assertThrows(IllegalStateException.class, () -> new DuelRing(myPokemon, opponent));
-
-        //then
-        assertNotNull(thrown.getMessage());
-    }
-
-    private PokemonDetails pokemon(int id, String name, long hp, long attack, long defence, long speed) {
-        return new PokemonDetails(id, name, new Statistics(hp, attack, defence, speed));
+    private Pokemon pokemon(int id, long speed) {
+        return new Pokemon(id, "Pokemon" + id, new Statistics(50, 20, 0, speed));
     }
 }

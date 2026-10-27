@@ -1,9 +1,10 @@
 package com.rest.pokemon.domain.battle;
 
-import com.rest.pokemon.domain.pokemon.PokemonDetails;
+import com.rest.pokemon.domain.pokemon.Pokemon;
 
 public record DuelResult(
-        PokemonDetails winner,
+        Pokemon winner,
+        Pokemon defeated,
         boolean myPokemonWinner
 ) {
 }

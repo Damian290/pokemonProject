@@ -3,7 +3,7 @@ package com.rest.pokemon.api;
 import com.rest.pokemon.api.dto.PokemonDetailsResponseDto;
 import com.rest.pokemon.api.dto.PokemonTeamResponseDto;
 import com.rest.pokemon.api.dto.StatisticsResponseDto;
-import com.rest.pokemon.domain.pokemon.PokemonDetails;
+import com.rest.pokemon.domain.pokemon.Pokemon;
 import com.rest.pokemon.domain.pokemon.PokemonTeam;
 import com.rest.pokemon.domain.pokemon.Statistics;
 import com.rest.pokemon.feature.battle.BattleManager;
@@ -80,7 +80,7 @@ class PokemonTeamEndpointTest {
     @Test
     void shouldUseBattleManagerAndMapperToBattle() {
         //given
-        var pokemon = new PokemonDetails(25, "Pikachu", new Statistics(35, 55, 40, 90));
+        var pokemon = new Pokemon(25, "Pikachu", new Statistics(35, 55, 40, 90));
         var response = new PokemonDetailsResponseDto(25, "Pikachu",
                 new StatisticsResponseDto(35, 55, 40, 90));
         when(battleManager.battle("Ash")).thenReturn(pokemon);

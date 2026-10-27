@@ -1,24 +1,25 @@
-package com.rest.pokemon.feature.battle.oponentfinder;
+package com.rest.pokemon.feature.battle.opponentfinder;
 
-import com.rest.pokemon.domain.pokemon.PokemonDetails;
+import com.rest.pokemon.domain.pokemon.Pokemon;
 import com.rest.pokemon.domain.pokemon.Statistics;
 import com.rest.pokemon.external.pokeapi.PokeApiConnector;
 import com.rest.pokemon.external.pokeapi.dto.details.PokemonDto;
 import com.rest.pokemon.external.pokeapi.dto.details.StatisticDto;
 import com.rest.pokemon.external.pokeapi.dto.details.StatisticsDto;
-import com.rest.pokemon.mapper.PokemonDtoToPokemonDetailsMapper;
+import com.rest.pokemon.mapper.PokemonDtoToPokemonMapper;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
 import java.util.Random;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 class OpponentFinderTest {
     private final PokeApiConnector pokeApiConnector = mock(PokeApiConnector.class);
     private final Random random = mock(Random.class);
-    private final PokemonDtoToPokemonDetailsMapper pokemonMapper = new PokemonDtoToPokemonDetailsMapper();
+    private final PokemonDtoToPokemonMapper pokemonMapper = new PokemonDtoToPokemonMapper();
     private final OpponentFinder sut = new OpponentFinder(pokeApiConnector, pokemonMapper, random);
 
     @Test
@@ -33,14 +34,15 @@ class OpponentFinderTest {
         var result = sut.find(List.of());
 
         //then
-        assertEquals(new PokemonDetails(opponentId, "Pikachu", new Statistics(50, 20, 10, 15)), result);
+        assertThat(result).usingRecursiveComparison()
+                .isEqualTo(new Pokemon(opponentId, "Pikachu", new Statistics(50, 20, 10, 15)));
         verify(pokeApiConnector).getPokemonDetails(opponentId);
     }
 
     @Test
     void shouldReselectWhenRandomIdBelongsToMyTeam() {
         //given
-        var teamPokemon = new PokemonDetails(25, "Pikachu", new Statistics(50, 20, 10, 15));
+        var teamPokemon = new Pokemon(25, "Pikachu", new Statistics(50, 20, 10, 15));
         int opponentId = 50;
         var opponentDto = pokemonDto("Diglett");
         when(random.nextInt(1, 152)).thenReturn(25, opponentId);

@@ -9,8 +9,8 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-class PokemonDtoToPokemonDetailsMapperTest {
-    private final PokemonDtoToPokemonDetailsMapper sut = new PokemonDtoToPokemonDetailsMapper();
+class PokemonDtoToPokemonMapperTest {
+    private final PokemonDtoToPokemonMapper sut = new PokemonDtoToPokemonMapper();
 
     @Test
     void shouldMapPokemonFieldsAndStatistics() {
@@ -27,10 +27,10 @@ class PokemonDtoToPokemonDetailsMapperTest {
         //then
         assertEquals(25, pokemon.id());
         assertEquals("Pikachu", pokemon.name());
-        assertEquals(35, pokemon.statistics().getHp());
-        assertEquals(55, pokemon.statistics().getAttack());
-        assertEquals(40, pokemon.statistics().getDefence());
-        assertEquals(90, pokemon.statistics().getSpeed());
+        assertEquals(35, pokemon.statistics().hp());
+        assertEquals(55, pokemon.statistics().attack());
+        assertEquals(40, pokemon.statistics().defence());
+        assertEquals(90, pokemon.statistics().speed());
     }
 
     @Test
@@ -42,9 +42,9 @@ class PokemonDtoToPokemonDetailsMapperTest {
         var pokemon = sut.map(dto, 0);
 
         //then
-        assertEquals(1, pokemon.statistics().getHp());
-        assertEquals(1, pokemon.statistics().getAttack());
-        assertEquals(0, pokemon.statistics().getDefence());
-        assertEquals(0, pokemon.statistics().getSpeed());
+        assertEquals(1, pokemon.statistics().hp());
+        assertEquals(1, pokemon.statistics().attack());
+        assertEquals(0, pokemon.statistics().defence());
+        assertEquals(0, pokemon.statistics().speed());
     }
 }

@@ -1,10 +1,10 @@
 package com.rest.pokemon.domain.battle;
 
-import com.rest.pokemon.domain.pokemon.PokemonDetails;
+import com.rest.pokemon.domain.pokemon.Pokemon;
 
 public record BattleParticipants(
         long teamId,
-        PokemonDetails myPokemon,
-        PokemonDetails opponentPokemon
+        Pokemon myPokemon,
+        Pokemon opponentPokemon
 ) {
 }

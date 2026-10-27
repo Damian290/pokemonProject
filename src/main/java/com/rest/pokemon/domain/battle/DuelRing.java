@@ -1,60 +1,66 @@
 package com.rest.pokemon.domain.battle;
 
-import com.rest.pokemon.domain.pokemon.PokemonDetails;
-import lombok.Data;
+import com.rest.pokemon.domain.pokemon.Pokemon;
 
-@Data
 public class DuelRing {
 
-    public DuelRing(PokemonDetails myPokemonDetails, PokemonDetails opponent) {
-        validatePokemon(myPokemonDetails);
-        validatePokemon(opponent);
+    private final Pokemon myPokemon;
+    private final Pokemon opponent;
+    private Pokemon currentTurn;
 
-        this.myPokemon = new PokemonInDuel(myPokemonDetails, myPokemonDetails.statistics().getDefence());
-        this.opponent = new PokemonInDuel(opponent, opponent.statistics().getDefence());
+    public DuelRing(Pokemon myPokemon, Pokemon opponent) {
+        if (myPokemon.isDead() || opponent.isDead()) {
+            throw new IllegalStateException("A Pokemon with zero HP cannot enter a duel");
+        }
+        this.myPokemon = myPokemon.copy();
+        this.opponent = opponent.copy();
         this.currentTurn = getFirstAttacker();
     }
 
-    private final PokemonInDuel myPokemon;
-    private final PokemonInDuel opponent;
-    private PokemonInDuel currentTurn;
+    public void performTurn() {
+        if (isDuelFinished()) {
+            throw new IllegalStateException("Duel is already finished");
+        }
 
-    public PokemonInDuel damageReceiver() {
-        return currentTurn == myPokemon ? opponent : myPokemon;
+        var defender = currentTurn == myPokemon ? opponent : myPokemon;
+        defender.receiveDamage(currentTurn.getAttack());
+
+        if (!isDuelFinished()) {
+            currentTurn = defender;
+        }
     }
 
     public boolean isDuelFinished() {
-        return myPokemon.getPokemonDetails().statistics().getHp() <= 0
-                || opponent.getPokemonDetails().statistics().getHp() <= 0;
+        return myPokemon.isDead() || opponent.isDead();
     }
 
-    public PokemonInDuel getWinner() {
-        if (myPokemon.getPokemonDetails().statistics().getHp() <= 0) {
-            return opponent;
-        } else if (opponent.getPokemonDetails().statistics().getHp() <= 0) {
-            return myPokemon;
-        } else {
-            return null;
+    public Pokemon getWinner() {
+        ensureDuelFinished();
+        return (myPokemon.isDead() ? opponent : myPokemon).copy();
+    }
+
+    public Pokemon getDefeated() {
+        ensureDuelFinished();
+        return (myPokemon.isDead() ? myPokemon : opponent).copy();
+    }
+
+    public boolean isMyPokemonWinner() {
+        ensureDuelFinished();
+        return !myPokemon.isDead();
+    }
+
+    private void ensureDuelFinished() {
+        if (!isDuelFinished()) {
+            throw new IllegalStateException(
+                    "Duel is not finished yet"
+            );
         }
     }
 
-    public Boolean isMyPokemonWinner() {
-        return getWinner() == myPokemon;
-    }
-
-    private PokemonInDuel getFirstAttacker() {
-        return opponent.getPokemonDetails().statistics().getSpeed() > myPokemon.getPokemonDetails().statistics().getSpeed()
+    private Pokemon getFirstAttacker() {
+        return opponent.getSpeed() > myPokemon.getSpeed()
                 ? opponent
                 : myPokemon;
-    }
-
-    private void validatePokemon(PokemonDetails pokemon) {
-        if (pokemon == null || pokemon.statistics() == null
-                || pokemon.statistics().getHp() <= 0 || pokemon.statistics().getAttack() <= 0) {
-            var pokemonName = pokemon == null ? "unknown" : pokemon.name();
-            throw new IllegalStateException(
-                    "Pokemon must have statistics with positive HP and attack to enter a duel: " + pokemonName);
-        }
     }
 
 }

@@ -1,11 +1,11 @@
 package com.rest.pokemon.repository;
 
-import com.rest.pokemon.domain.pokemon.PokemonDetails;
+import com.rest.pokemon.domain.pokemon.Pokemon;
 import com.rest.pokemon.domain.pokemon.PokemonTeam;
 import com.rest.pokemon.repository.entity.PokemonTeamEntity;
 import com.rest.pokemon.repository.exception.PokemonTeamNameAlreadyExistsException;
 import com.rest.pokemon.repository.exception.PokemonTeamNotFoundException;
-import com.rest.pokemon.repository.mapper.PokemonDetailsEntityMapper;
+import com.rest.pokemon.repository.mapper.PokemonEntityMapper;
 import lombok.RequiredArgsConstructor;
 
 import java.util.ArrayList;
@@ -16,15 +16,15 @@ public class PokemonTeamDaoImpl implements PokemonTeamDao {
 
     // In-memory stand-in for the database table storing Pokemon teams.
     private final List<PokemonTeamEntity> pokemonTeams = new ArrayList<>();
-    private final PokemonDetailsEntityMapper mapper;
+    private final PokemonEntityMapper mapper;
     private long nextId = 1;
 
     @Override
-    public synchronized PokemonTeam create(String name, List<PokemonDetails> newPokemonDetails) {
+    public synchronized PokemonTeam create(String name, List<Pokemon> newPokemons) {
         if (pokemonTeams.stream().anyMatch(team -> team.name().equals(name))) {
             throw new PokemonTeamNameAlreadyExistsException(name);
         }
-        var entities = newPokemonDetails.stream().map(mapper::toEntity).toList();
+        var entities = newPokemons.stream().map(mapper::toEntity).toList();
         var entity = new PokemonTeamEntity(nextId++, name, entities);
         pokemonTeams.add(entity);
         return toDomain(entity);
@@ -50,21 +50,9 @@ public class PokemonTeamDaoImpl implements PokemonTeamDao {
     }
 
     @Override
-    public synchronized PokemonDetails removeFirst(long teamId) {
-        var team = findTeam(teamId);
-        var pokemonDetails = new ArrayList<>(team.pokemonDetails());
-        var removedPokemon = mapper.toDomain(pokemonDetails.removeFirst());
-        pokemonTeams.set(pokemonTeams.indexOf(team), new PokemonTeamEntity(team.id(), team.name(), pokemonDetails));
-        return removedPokemon;
-    }
-
-    @Override
-    public synchronized void updateFirstPokemon(long teamId, PokemonDetails updatedPokemon) {
-        var team = findTeam(teamId);
-        var pokemonDetails = new ArrayList<>(team.pokemonDetails());
-        pokemonDetails.removeFirst();
-        pokemonDetails.addFirst(mapper.toEntity(updatedPokemon));
-        pokemonTeams.set(pokemonTeams.indexOf(team), new PokemonTeamEntity(team.id(), team.name(), pokemonDetails));
+    public synchronized void save(PokemonTeam team) {
+        var existing = findTeam(team.id());
+        pokemonTeams.set(pokemonTeams.indexOf(existing), toEntity(team));
     }
 
     private PokemonTeamEntity findTeam(long teamId) {
@@ -78,7 +66,15 @@ public class PokemonTeamDaoImpl implements PokemonTeamDao {
         return new PokemonTeam(
                 entity.id(),
                 entity.name(),
-                entity.pokemonDetails().stream().map(mapper::toDomain).toList()
+                entity.pokemons().stream().map(mapper::toDomain).toList()
+        );
+    }
+
+    private PokemonTeamEntity toEntity(PokemonTeam team) {
+        return new PokemonTeamEntity(
+                team.id(),
+                team.name(),
+                team.pokemons().stream().map(mapper::toEntity).toList()
         );
     }
 }

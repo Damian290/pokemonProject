@@ -1,7 +1,7 @@
 package com.rest.pokemon.feature.pokemonteam;
 
 import com.rest.pokemon.concurrent.VirtualThreadTaskRunner;
-import com.rest.pokemon.domain.pokemon.PokemonDetails;
+import com.rest.pokemon.domain.pokemon.Pokemon;
 import com.rest.pokemon.domain.pokemon.PokemonTeam;
 import com.rest.pokemon.domain.pokemon.Statistics;
 import com.rest.pokemon.external.pokeapi.PokeApiConnector;
@@ -9,12 +9,14 @@ import com.rest.pokemon.external.pokeapi.dto.details.PokemonDto;
 import com.rest.pokemon.external.pokeapi.dto.details.StatisticDto;
 import com.rest.pokemon.external.pokeapi.dto.details.StatisticsDto;
 import com.rest.pokemon.feature.pokemonteam.idselector.PokemonIdsSelector;
-import com.rest.pokemon.mapper.PokemonDtoToPokemonDetailsMapper;
+import com.rest.pokemon.mapper.PokemonDtoToPokemonMapper;
 import com.rest.pokemon.repository.PokemonTeamDao;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 
 import java.util.List;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.*;
@@ -24,7 +26,7 @@ class PokemonTeamCreatorTest {
     private final PokeApiConnector pokeApiConnector = mock(PokeApiConnector.class);
     private final PokemonTeamDao pokemonTeamDao = mock(PokemonTeamDao.class);
     private final VirtualThreadTaskRunner virtualThreadTaskRunner = new VirtualThreadTaskRunner();
-    private final PokemonDtoToPokemonDetailsMapper pokemonMapper = new PokemonDtoToPokemonDetailsMapper();
+    private final PokemonDtoToPokemonMapper pokemonMapper = new PokemonDtoToPokemonMapper();
     private final PokemonTeamCreator sut = new PokemonTeamCreator(
             pokemonIdsSelector, pokeApiConnector, pokemonMapper, pokemonTeamDao, virtualThreadTaskRunner);
 
@@ -35,20 +37,22 @@ class PokemonTeamCreatorTest {
         when(pokemonIdsSelector.selectSixIds()).thenReturn(pokemonIds);
         when(pokeApiConnector.getPokemonDetails(anyInt()))
                 .thenAnswer(invocation -> pokemonDto("Pokemon", 50, 20, 10, 15));
-        var expectedDetails = pokemonIds.stream()
+        var expectedPokemons = pokemonIds.stream()
                 .map(id -> pokemon(id, "Pokemon", 50, 20, 10, 15))
                 .toList();
-        var expectedTeam = new PokemonTeam(1, "test", expectedDetails);
-        when(pokemonTeamDao.create("test", expectedDetails)).thenReturn(expectedTeam);
+        var expectedTeam = new PokemonTeam(1, "test", expectedPokemons);
+        when(pokemonTeamDao.create(eq("test"), anyList())).thenReturn(expectedTeam);
 
         //when
         var result = sut.create("test");
 
         //then
-        assertEquals(expectedTeam, result);
+        assertSame(expectedTeam, result);
         verify(pokemonIdsSelector).selectSixIds();
         pokemonIds.forEach(id -> verify(pokeApiConnector).getPokemonDetails(id));
-        verify(pokemonTeamDao).create("test", expectedDetails);
+        var pokemonsCaptor = ArgumentCaptor.forClass(List.class);
+        verify(pokemonTeamDao).create(eq("test"), pokemonsCaptor.capture());
+        assertThat(pokemonsCaptor.getValue()).usingRecursiveComparison().isEqualTo(expectedPokemons);
     }
 
     @Test
@@ -67,8 +71,8 @@ class PokemonTeamCreatorTest {
         verify(pokemonTeamDao, never()).create(eq("test"), anyList());
     }
 
-    private PokemonDetails pokemon(int id, String name, long hp, long attack, long defence, long speed) {
-        return new PokemonDetails(id, name, new Statistics(hp, attack, defence, speed));
+    private Pokemon pokemon(int id, String name, long hp, long attack, long defence, long speed) {
+        return new Pokemon(id, name, new Statistics(hp, attack, defence, speed));
     }
 
     private PokemonDto pokemonDto(String name, long hp, long attack, long defence, long speed) {

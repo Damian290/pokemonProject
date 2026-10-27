@@ -1,6 +1,6 @@
 package com.rest.pokemon.repository.entity;
 
-public record PokemonDetailsEntity(
+public record PokemonEntity(
         Integer id,
         String name,
         long hp,

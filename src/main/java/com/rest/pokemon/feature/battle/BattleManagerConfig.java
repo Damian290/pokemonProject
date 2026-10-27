@@ -1,7 +1,7 @@
 package com.rest.pokemon.feature.battle;
 
 import com.rest.pokemon.feature.battle.duel.DuelResolver;
-import com.rest.pokemon.feature.battle.oponentfinder.OpponentFinder;
+import com.rest.pokemon.feature.battle.opponentfinder.OpponentFinder;
 import com.rest.pokemon.feature.battle.preparation.BattlePreparation;
 import com.rest.pokemon.metrics.MetricService;
 import com.rest.pokemon.repository.PokemonTeamDao;

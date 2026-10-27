@@ -1,7 +1,7 @@
-package com.rest.pokemon.feature.battle.oponentfinder;
+package com.rest.pokemon.feature.battle.opponentfinder;
 
 import com.rest.pokemon.external.pokeapi.PokeApiConnector;
-import com.rest.pokemon.mapper.PokemonDtoToPokemonDetailsMapper;
+import com.rest.pokemon.mapper.PokemonDtoToPokemonMapper;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -14,7 +14,7 @@ public class OpponentFinderConfig {
     public OpponentFinder opponentFinder(
             PokeApiConnector pokeApiConnector,
             Random random,
-            PokemonDtoToPokemonDetailsMapper pokemonMapper
+            PokemonDtoToPokemonMapper pokemonMapper
     ) {
         return new OpponentFinder(pokeApiConnector, pokemonMapper, random);
     }

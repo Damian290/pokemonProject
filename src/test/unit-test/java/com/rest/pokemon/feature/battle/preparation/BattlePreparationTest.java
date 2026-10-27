@@ -1,14 +1,17 @@
 package com.rest.pokemon.feature.battle.preparation;
 
-import com.rest.pokemon.domain.pokemon.PokemonDetails;
+import com.rest.pokemon.domain.pokemon.Pokemon;
 import com.rest.pokemon.domain.pokemon.PokemonTeam;
+import com.rest.pokemon.domain.pokemon.Statistics;
 import com.rest.pokemon.feature.battle.exception.NoPokemonTeamException;
-import com.rest.pokemon.feature.battle.oponentfinder.OpponentFinder;
+import com.rest.pokemon.feature.battle.opponentfinder.OpponentFinder;
 import com.rest.pokemon.repository.PokemonTeamDao;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 
 import java.util.List;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
@@ -20,21 +23,23 @@ class BattlePreparationTest {
     @Test
     void shouldUseFirstTeamMemberAndFindOpponent() {
         //given
-        var firstPokemon = PokemonDetails.builder().id(1).build();
-        var secondPokemon = PokemonDetails.builder().id(2).build();
-        var opponent = PokemonDetails.builder().id(3).build();
+        var firstPokemon = new Pokemon(1, "Pikachu", new Statistics(50, 20, 10, 100));
+        var secondPokemon = new Pokemon(2, "Charmander", new Statistics(50, 20, 10, 80));
+        var opponent = new Pokemon(3, "Bulbasaur", new Statistics(50, 20, 10, 70));
         var members = List.of(firstPokemon, secondPokemon);
         when(pokemonTeamDao.getByName("team")).thenReturn(new PokemonTeam(7, "team", members));
-        when(opponentFinder.find(members)).thenReturn(opponent);
+        when(opponentFinder.find(anyList())).thenReturn(opponent);
 
         //when
         var participants = sut.prepare("team");
 
         //then
         assertEquals(7, participants.teamId());
-        assertSame(firstPokemon, participants.myPokemon());
+        assertThat(participants.myPokemon()).usingRecursiveComparison().isEqualTo(firstPokemon);
         assertSame(opponent, participants.opponentPokemon());
-        verify(opponentFinder).find(members);
+        var membersCaptor = ArgumentCaptor.forClass(List.class);
+        verify(opponentFinder).find(membersCaptor.capture());
+        assertThat(membersCaptor.getValue()).usingRecursiveComparison().isEqualTo(members);
     }
 
     @Test

@@ -13,7 +13,7 @@ public class MetricService {
     public MetricService(MeterRegistry meterRegistry, PokemonTeamDao pokemonTeamDao) {
         this.defeatedOpponentsCounter = meterRegistry.counter("pokemon.battles.opponents.defeated");
         Gauge.builder("pokemon.teams.pokemon.count", pokemonTeamDao,
-                        dao -> dao.getAll().stream().mapToInt(team -> team.pokemonDetails().size()).sum())
+                        dao -> dao.getAll().stream().mapToInt(team -> team.pokemons().size()).sum())
                 .description("Total number of Pokemon across all teams")
                 .register(meterRegistry);
     }

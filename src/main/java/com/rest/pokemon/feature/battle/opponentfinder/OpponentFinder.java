@@ -1,8 +1,8 @@
-package com.rest.pokemon.feature.battle.oponentfinder;
+package com.rest.pokemon.feature.battle.opponentfinder;
 
-import com.rest.pokemon.domain.pokemon.PokemonDetails;
+import com.rest.pokemon.domain.pokemon.Pokemon;
 import com.rest.pokemon.external.pokeapi.PokeApiConnector;
-import com.rest.pokemon.mapper.PokemonDtoToPokemonDetailsMapper;
+import com.rest.pokemon.mapper.PokemonDtoToPokemonMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -16,12 +16,12 @@ import java.util.stream.Collectors;
 public class OpponentFinder {
 
     private final PokeApiConnector pokeApiConnector;
-    private final PokemonDtoToPokemonDetailsMapper pokemonMapper;
+    private final PokemonDtoToPokemonMapper pokemonMapper;
     private final Random random;
 
-    public PokemonDetails find(List<PokemonDetails> teamMembers) {
+    public Pokemon find(List<Pokemon> teamMembers) {
         Set<Integer> teamPokemonIds = teamMembers.stream()
-                .map(PokemonDetails::id)
+                .map(Pokemon::id)
                 .collect(Collectors.toSet());
 
         int randomId;

@@ -6,7 +6,7 @@ The goal is to create a draft of a game where you and your Pokémon team battle 
 
 # Battle rules
 
-* A winning team Pokémon keeps its remaining HP for the next battle, while its battle defence resets to its base defence at the start of each duel. This is an intentional game design choice. For example, a Pokémon with 100 HP and 30 base defence that wins with 60 HP and 0 battle defence starts its next duel with 60 HP and 30 battle defence. Only the temporary defence in `PokemonInDuel` is depleted; the base defence remains unchanged.
+* A winning team Pokémon keeps its remaining HP for the next battle, while its battle defence resets to its base defence at the start of each duel. This is an intentional game design choice. For example, a Pokémon with 100 HP and 30 base defence that wins with 60 HP and 0 battle defence starts its next duel with 60 HP and 30 battle defence. Only the temporary defence in `Pokemon` is depleted; the base defence remains unchanged.
 
 # Technical details
 The project uses a synchronous RestClient for communication with external APIs.
