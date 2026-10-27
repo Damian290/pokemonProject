@@ -40,7 +40,7 @@ public class BattleManager {
     private void applyDuelResult(long teamId, DuelResult duelResult) {
         var team = pokemonTeamDao.getById(teamId);
         if (!duelResult.myPokemonWinner()) {
-            pokemonTeamDao.save(team.removeDefeatedPokemon(duelResult.defeated()));
+            pokemonTeamDao.save(team.removePokemon(duelResult.defeated()));
             log.debug("Defeated Pokemon removed from team: {}", duelResult.defeated());
         } else {
             pokemonTeamDao.save(team.updatePokemonState(duelResult.winner()));

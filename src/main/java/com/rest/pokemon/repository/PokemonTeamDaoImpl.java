@@ -24,10 +24,11 @@ public class PokemonTeamDaoImpl implements PokemonTeamDao {
         if (pokemonTeams.stream().anyMatch(team -> team.name().equals(name))) {
             throw new PokemonTeamNameAlreadyExistsException(name);
         }
-        var entities = newPokemons.stream().map(mapper::toEntity).toList();
-        var entity = new PokemonTeamEntity(nextId++, name, entities);
+        var team = new PokemonTeam(nextId, name, newPokemons);
+        var entity = toEntity(team);
         pokemonTeams.add(entity);
-        return toDomain(entity);
+        nextId++;
+        return team;
     }
 
     @Override

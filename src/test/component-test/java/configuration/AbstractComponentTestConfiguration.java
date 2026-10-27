@@ -1,7 +1,6 @@
 package configuration;
 
 import com.rest.pokemon.external.pokeapi.PokeApiClient;
-import com.rest.pokemon.repository.PokemonTeamDao;
 import org.mockito.Mockito;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -22,12 +21,6 @@ public class AbstractComponentTestConfiguration {
     @Primary
     public PokeApiClient pokeApiClient() {
         return Mockito.mock(PokeApiClient.class);
-    }
-
-    @Bean
-    @Primary
-    public PokemonTeamDao pokemonTeamDao() {
-        return Mockito.mock(PokemonTeamDao.class);
     }
 
 }

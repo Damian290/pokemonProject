@@ -34,9 +34,9 @@ public record PokemonTeam(
         return pokemons.stream().map(Pokemon::copy).toList();
     }
 
-    public PokemonTeam removeDefeatedPokemon(Pokemon defeatedPokemon) {
+    public PokemonTeam removePokemon(Pokemon pokemon) {
         var updatedPokemons = new ArrayList<>(pokemons);
-        updatedPokemons.remove(findPokemonIndex(defeatedPokemon));
+        updatedPokemons.remove(findPokemonIndex(pokemon));
         return new PokemonTeam(id, name, updatedPokemons);
     }
 

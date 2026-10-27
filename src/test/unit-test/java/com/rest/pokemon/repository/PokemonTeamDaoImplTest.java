@@ -126,7 +126,7 @@ class PokemonTeamDaoImplTest {
         var team = sut.create("test", List.of(firstPokemon, secondPokemon));
 
         //when
-        sut.save(team.removeDefeatedPokemon(firstPokemon));
+        sut.save(team.removePokemon(firstPokemon));
 
         //then
         assertThat(sut.getById(1)).usingRecursiveComparison()
